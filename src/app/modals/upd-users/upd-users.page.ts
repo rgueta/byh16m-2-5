@@ -1,5 +1,6 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { ToastController, ModalController, AnimationController } from '@ionic/angular';
+import { ToastController, ModalController, 
+  AnimationController,AlertController } from '@ionic/angular';
 import { DatabaseService } from '../../services/database.service';
 import { SMS, SmsOptions } from '@ionic-native/sms/ngx';
 import { Storage } from "@capacitor/core";
@@ -25,7 +26,8 @@ export class UpdUsersPage implements OnInit {
               private toast:ToastController,
               private animationController:AnimationController,
               public api : DatabaseService,
-              private sms: SMS) { }
+              private sms: SMS,
+              public alertCtrl:AlertController) { }
 
   async ngOnInit() {
     this.sim = await Storage.get({key:'my-core-sim'});
@@ -49,54 +51,86 @@ export class UpdUsersPage implements OnInit {
          });
   }
 
-
-  async BlockToggleEven(locked,UserId,name,email,uuid,sim,house){
+  async lockedUser(event,locked,UserId,name,email,uuid,sim,house){
     let msg = name + ',' + email + ',' + uuid + ',' + house;
+    let element = <HTMLInputElement> document.getElementById("LockedToggle"); 
 
-    if(locked){
-      
-      
-      if(this.twilio.value == 'false'){
+    if(event.target.checked != locked){
+      let alert = await this.alertCtrl.create({
+        header: 'Confirm',
+        message: 'Proceed to lock user ?',
+        buttons: [
+          {
+            text: 'Cancel',
+            role: 'cancel',
+            cssClass: 'icon-color',
+            handler: () => {
+              element.checked = locked
+            }
+          },
+          {
+            text: 'Yes',
+            cssClass: 'icon-color',
+            handler: async data => {
+              try{
+  
+              if(event.target.checked){
+                msg = 'locked,' + msg
+                if(this.twilio.value == 'false'){
+                  await this.api.postData('api/users/locked/',{'userId': UserId}).then(
+                      (onResolve) => {
+                        // ------- send SMS  ---------------------
+                        this.sendSMS(msg);
+                        console.log('API Result  --> ', onResolve);
+                  },
+                  (onReject) =>{
+                    console.log('API Rejected ', onReject)
+                  }
+                  );
+                  
+                }else{
+                  this.api.postData('api/twilio/access/' + 
+                  UserId + '/' + msg + '/' + this.sim['value'],'')
+                }
+              }else{
+                msg = 'unlocked,'  + msg;
+                if(this.twilio.value == 'false'){
+                  await this.api.postData('api/users/unlocked/',{'userId':UserId}).then(
+                    (onResolve) => {
+                      // ------- send SMS  ---------------------
+                      this.sendSMS(msg);
+                      console.log('API Result  --> ', onResolve);
+                  },
+                  (onReject) =>{
+                    console.log('API Rejected ', onReject)
+                  });
+                }else{
 
-        msg = 'locked,' + msg
-         await this.api.postData('api/users/locked/',{'userId': UserId}).then(
-            (onResolve) => {
-              // ------- send SMS  ---------------------
-              this.sendSMS(msg);
-              console.log('API Result  --> ', onResolve);
-         },
-         (onReject) =>{
-           console.log('API Rejected ', onReject)
-         }
-        );
-        
-      }else{
+                  this.api.postData('api/twilio/access/' + 
+                  UserId + '/' + msg + '/' + this.sim['value'],'')
 
-        this.api.postData('api/twilio/access/' + 
-        UserId + '/' + msg + '/' + this.sim['value'],'')
-      }
-    }else{
-      msg = 'unlocked,'  + msg;
-      
-      if(this.twilio.value == 'false'){
-        await this.api.postData('api/users/unlocked/',{'userId':UserId}).then(
-          (onResolve) => {
+                }
+              }
 
-            // ------- send SMS  ---------------------
-            this.sendSMS(msg);
-            console.log('API Result  --> ', onResolve);
-        },
-        (onReject) =>{
-          console.log('API Rejected ', onReject)
-        });
-      }else{
+              const toast = await this.toast.create({
+                message : 'msg sent to ' + sim.value,
+                duration: 3000
+              });
+              toast.present();
+            }catch(e){
+              const toast = await this.toast.create({
+                message : 'Text was not sent !.. error: ' + e.message,
+                duration: 3000
+              });
+                toast.present();
+            }
 
-        this.api.postData('api/twilio/access/' + 
-        UserId + '/' + msg + '/' + this.sim['value'],'')
-
-      }
+            }
+          }
+        ]
+      });
+      await alert.present();
     }
-    
   }
 
     // Send a text message using default options

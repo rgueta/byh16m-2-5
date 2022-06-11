@@ -41,12 +41,11 @@
         </ion-item>
 
         <ion-item class="wrap-input">
-            <ion-label class='labelInputWarning'>Blocked user : </ion-label>
-            <ion-toggle id="deleteToggle" class="ion-toggle-red" slot="end"
-             [ngModel]="item.locked" (ngModelChange)="BlockToggleEven($event,item._id,item.name,item.email,item.uuid,item.sim,item.house)"
-            [ngModelOptions]="{standalone: true}"></ion-toggle>
+          <ion-label class='labelInputWarning'>Blocked user : </ion-label>
+          <ion-toggle id="LockedToggle" class="ion-toggle-red" slot="end" checked="{{item.locked}}"
+          (ionChange)="lockedUser($event,item.locked,item._id,item.name,item.email,item.uuid,item.sim,item.house)"
+          ></ion-toggle>
         </ion-item>
-
         <!--<ion-button class='titleButtonBlue' disabled = {{this.buttonCodeDisabled}} (click)='sendCode(item._id)' expand="full">Enviar codigo</ion-button>-->
     </form>
 

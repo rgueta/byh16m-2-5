@@ -24,6 +24,7 @@ export class AdminPage implements OnInit {
   automaticClose = false;
   public userId : any;
   myToast:any;
+  public routineOpen=false;
 
 
   constructor(
@@ -48,6 +49,7 @@ export class AdminPage implements OnInit {
     await this.api.getData('api/cores/admin/'  + this.userId['value']).subscribe(async result =>{
       this.CoresList = await result;
       this.CoresList[0].open = true;
+      console.table('Core table --> ', this.CoresList);
     });
     
   }
@@ -163,32 +165,94 @@ export class AdminPage implements OnInit {
         intent:''
       }
     }
-    
+
     // const sim =  await this.storage.get('my-core-sim');
     const sim =  await Storage.get({key : 'my-core-sim'});
+    let alert = await this.alertCtrl.create({
+      header: 'Confirm',
+      message: 'Request module status?',
+      buttons: [
+        {
+          text: 'Cancel',
+          role: 'cancel',
+          cssClass: 'icon-color',
+          handler: () => {
+          }
+        },
+        {
+          text: 'Yes',
+          cssClass: 'icon-color',
+          handler: async data => {
+            try{
 
-    try{
-      await this.sms.send(sim.value,'status,sim',options);
+              await this.sms.send(sim.value,'status,sim',options);
 
-      // alert('Text was sent !')
-        const toast = await this.toast.create({
-          message : 'msg sent to ' + sim.value,
-          duration: 3000
-        });
-
-          toast.present();
+              // alert('Text was sent !')
+                const toast = await this.toast.create({
+                  message : 'msg sent to ' + sim.value,
+                  duration: 3000
+                });
         
-    }
-    catch(e){
-      // alert('Text was not sent !')
-      const toast = await this.toast.create({
-        message : 'Text was not sent !.. error: ' + e.message,
-        duration: 3000
-      });
+                  toast.present();
+          }catch(e){
+            const toast = await this.toast.create({
+              message : 'Text was not sent !.. error: ' + e.message,
+              duration: 3000
+            });
+              toast.present();
+          }
 
-        toast.present();
-      }
+          }
+        }
+      ]
+    });
+
+    await alert.present();
   }
+
+  async ModuleRST(){
+    // Send a text message using default options
+
+   var options:SmsOptions={
+     replaceLineBreaks:false,
+     android:{ intent:'' }
+   }
+   
+   const sim =  await Storage.get({key : 'my-core-sim'});
+   let alert = await this.alertCtrl.create({
+    header: 'Confirm',
+    message: 'Reset module ?',
+    buttons: [
+      {
+        text: 'Cancel',
+        role: 'cancel',
+        cssClass: 'icon-color',
+      },
+      {
+        text: 'Yes',
+        cssClass: 'icon-color',
+        handler: async data => {
+          try{
+            await this.sms.send(sim.value,'rst,sim',options);
+            const toast = await this.toast.create({
+              message : 'msg sent to ' + sim.value,
+              duration: 3000
+            });
+            toast.present();
+
+          }catch(e){
+            const toast = await this.toast.create({
+              message : 'Text was not sent !.. error: ' + e.message,
+              duration: 3000
+            });
+              toast.present();
+          }
+        }
+      }
+    ]
+  });
+  await alert.present();
+ }
 
   async getCoreCodes(){
     var options:SmsOptions={
@@ -201,123 +265,160 @@ export class AdminPage implements OnInit {
     // const sim =  await this.storage.get('my-core-sim');
     const sim =  await Storage.get({key : 'my-core-sim'});
 
-    try{
-      await this.sms.send(sim.value,'active_codes,sim',options);
 
-      // alert('Text was sent !')
-        const toast = await this.toast.create({
-          message : 'msg sent to ' + sim.value,
-          duration: 3000
-        });
-
-          toast.present();
+    let alert = await this.alertCtrl.create({
+      header: 'Confirm',
+      message: 'Request codes from module?',
+      buttons: [
+        {
+          text: 'Cancel',
+          role: 'cancel',
+          cssClass: 'icon-color',
+          handler: () => {
+          }
+        },
+        {
+          text: 'Yes',
+          cssClass: 'icon-color',
+          handler: async data => {
+            try{
+              await this.sms.send(sim.value,'active_codes,sim',options);
         
-    }
-    catch(e){
-      // alert('Text was not sent !')
-      const toast = await this.toast.create({
-        message : 'Text was not sent !.. error: ' + e.message,
-        duration: 3000
-      });
+              // alert('Text was sent !')
+                const toast = await this.toast.create({
+                  message : 'msg sent to ' + sim.value,
+                  duration: 3000
+                });
+        
+                  toast.present();
+                
+            }
+            catch(e){
+              // alert('Text was not sent !')
+              const toast = await this.toast.create({
+                message : 'Text was not sent !.. error: ' + e.message,
+                duration: 3000
+              });
+        
+                toast.present();
+              }
+          }
+        }
+      ]
+    });
 
-        toast.present();
-      }
+    await alert.present();
+
+
   }
 
       // ---- Animation controller  ----------------------------------
 
-      async collectUsers(id,core) {
-        const enterAnimation = (baseEl: any) => {
-          const backdropAnimation = this.animationController.create()
-            .addElement(baseEl.querySelector('ion-backdrop')!)
-            .fromTo('opacity', '0.01', 'var(--backdrop-opacity)');
-    
-          const wrapperAnimation = this.animationController.create()
-            .addElement(baseEl.querySelector('.modal-wrapper')!)
-            .keyframes([
-              { offset: 0, opacity: '0', transform: 'scale(0)' },
-              { offset: 1, opacity: '0.99', transform: 'scale(1)' }
-            ]);
-    
-          return this.animationController.create()
-            .addElement(baseEl)
-            .easing('ease-out')
-            .duration(700)
-            .addAnimation([backdropAnimation, wrapperAnimation]);
-        }
-    
-        const leaveAnimation = (baseEl: any) => {
-          return enterAnimation(baseEl).direction('reverse');
-        }
-    
-        const modal = await this.modalController.create({
-          component: UpdUsersPage,
-          componentProps:{
-            'Core':core,
-            'CoreId': id
-          },
-          enterAnimation,
-          leaveAnimation
-        });
-        return await modal.present();
-      }
+  async collectUsers(id,core) {
+    const enterAnimation = (baseEl: any) => {
+      const backdropAnimation = this.animationController.create()
+        .addElement(baseEl.querySelector('ion-backdrop')!)
+        .fromTo('opacity', '0.01', 'var(--backdrop-opacity)');
 
-      async deleteToggleEven($event,id, name) {
-        
-        if($event.detail.checked){
-          this.deleteCore(id,name);
-        }else{
-         
-        }
-      }
+      const wrapperAnimation = this.animationController.create()
+        .addElement(baseEl.querySelector('.modal-wrapper')!)
+        .keyframes([
+          { offset: 0, opacity: '0', transform: 'scale(0)' },
+          { offset: 1, opacity: '0.99', transform: 'scale(1)' }
+        ]);
 
+      return this.animationController.create()
+        .addElement(baseEl)
+        .easing('ease-out')
+        .duration(700)
+        .addAnimation([backdropAnimation, wrapperAnimation]);
+    }
 
-    async deleteCore(id, name) {
-      let element = <HTMLInputElement> document.getElementById("deleteToggle"); 
+    const leaveAnimation = (baseEl: any) => {
+      return enterAnimation(baseEl).direction('reverse');
+    }
+
+    const modal = await this.modalController.create({
+      component: UpdUsersPage,
+      componentProps:{
+        'Core':core,
+        'CoreId': id
+      },
+      enterAnimation,
+      leaveAnimation
+    });
+    return await modal.present();
+  }
+
+  async chgStatusCore(event,coreStatus, id, name) {
+    let element = <HTMLInputElement> document.getElementById("disableToggle");
+    let titleMsg = 'Disable ';
+    console.log('event -->' ,event)
+    console.log('coreStatus --> ', coreStatus)
+
+    if(event.target.checked)
+    {
+      titleMsg = 'Enable ';
+    }
+    if(event.target.checked != coreStatus){
       let alert = await this.alertCtrl.create({
-        header: 'Confirm remove',
-        message: 'Do you want delete ' + name  + ' core ?',
+        header: 'Confirm',
+        message: titleMsg + '[ ' + name + ' ] core ?',
         buttons: [
           {
             text: 'Cancel',
             role: 'cancel',
             cssClass: 'icon-color',
             handler: () => {
-              element.checked = false;
+              element.checked = !event.target.checked;
             }
           },
           {
             text: 'Ok',
             cssClass: 'icon-color',
             handler: async data => {
-              console.log('Items Removed!');
-              try{
-                await this.api.deleteData('api/cores/',id);
-                await this.getCores();
-              }catch(err){
-                console.log('can not delete core', err);
+              if(event.target.checked){
+                await this.api.postData('api/cores/enable/',{'coreId' : id}).then(async (onResolve) =>{
+                  await this.getCores();
+                },
+                (onReject) =>{
+                  console.log('Can not enable core, ', onReject);
+                });
+              }else{
+                console.log('api/cores/disable/',{'coreId': id})
+                await this.api.postData('api/cores/disable/',{'coreId' : id}).then(async (onResolve) =>{
+                  await this.getCores();
+                },
+                (onReject) =>{
+                  console.log('Can not disable core, ', onReject);
+                });
               }
+                
             }
           }
         ]
       });
-      await alert.present();
-    }
 
-    async TwilioToggleEven($event){
-      if($event.detail.checked){
-        console.log('Usar twilio');
-        await Storage.set({key: TWILIO, value: 'true'});
-      }else{
-        console.log('Usar Sim');
-        await Storage.set({key: TWILIO, value: 'false'});
-      }
+    await alert.present();
     }
+  }
+
+  async TwilioToggleEven($event){
+    if($event.detail.checked){
+      console.log('Usar twilio');
+      await Storage.set({key: TWILIO, value: 'true'});
+    }else{
+      console.log('Usar Sim');
+      await Storage.set({key: TWILIO, value: 'false'});
+    }
+  }
 
 
-    async modalUpdCity(){
-      this.toastEvent('Process new city ');
-    }
+  async modalUpdCity(){
+    this.toastEvent('Process new city ');
+  }
+
+// region Main Accordion list  --------------------------------------
 
   toggleSection(index){
     this.CoresList[index].open = !this.CoresList[index].open;
@@ -331,6 +432,18 @@ export class AdminPage implements OnInit {
   toggleItem(index, childIndex){
     this.CoresList[index].children[childIndex].open = !this.CoresList[index].open;
   }
+
+// end region
+
+// region Routines Accordion list  --------------------------------------
+
+toggleSectionRoutines(){
+  this.routineOpen = !this.routineOpen
+  
+}
+
+
+// end region
 
     // -------   toast control alerts    ---------------------
     toastEvent(msg){
